@@ -6,7 +6,7 @@ from io import BytesIO
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -15,9 +15,13 @@ from selenium.webdriver.support.ui import Select
 import time
 
 # Crear directorio para descargas si no existe
-# download_dir = os.path.join(os.getcwd(), "./hidrometeorologico")
-# if not os.path.exists(download_dir):
-    # os.makedirs(download_dir)
+download_dir = os.path.join(os.getcwd(), "hidrometeorologico")
+if not os.path.exists(download_dir):
+    os.makedirs(download_dir)
+
+# Asegúrate de que la ruta esté correctamente formateada para Windows
+download_dir = download_dir.replace("/", "\\")
+print(f"Directorio de descarga: {download_dir}")
 
 opts = Options()
 opts.add_argument("start-maximized")
@@ -28,14 +32,12 @@ opts.add_argument("--disable-blink-features=AutomationControlled")
 # opts.add_argument("--disable-gpu")
 
 chrome_prefs = {
-    # No mostrar diálogo de descarga
     "download.prompt_for_download": False,
-    # Carpeta por defecto para descargar
-    # "download.default_directory": download_dir,
-    # Permitir múltiples descargas sin preguntar
+    "download.default_directory": download_dir,
+    "download.directory_upgrade": True,  # Añadir esta opción
+    "safebrowsing.enabled": True,  # Mantener la navegación segura habilitada
     "profile.default_content_settings.popups": 0,
     "profile.default_content_setting_values.automatic_downloads": 1,
-    # (opcional) deshabilitar notificaciones del sitio
     "profile.default_content_setting_values.notifications": 2
 }
 
@@ -160,6 +162,8 @@ try:
             try: 
 
                 print(f"\nSeleccionando opción {index}: {options[index].text}")
+
+                option_text = options[index].text
                 
                 # Localizamos el select nuevamente (por si el DOM se actualizó)
                 select_element = WebDriverWait(driver, 10).until(
@@ -189,6 +193,26 @@ try:
                 driver.execute_script("arguments[0].click();", export_button)
                 time.sleep(5)  # Esperamos a que se complete la descarga
                 print(f"Click en el boton de Exportar CSV realizado con exito")
+
+                # Logica para renombrar el archivo .csv descargado
+
+                time.sleep(5)
+
+                # Primero identificamos el archivo descargado
+                downloaded_files = os.listdir(download_dir)
+                csv_files = [f for f in downloaded_files if f.startswith('table')]
+                if csv_files:
+                    latest_file = max([os.path.join(download_dir, f) for f in csv_files], key=os.path.getctime)
+                    print(f"Archivo CSV descargado: {latest_file}")
+
+                    # Renombramos el archivo
+                    new_filename = os.path.join(download_dir, f"hidrometeorologico_{option_text}.csv")
+                    os.rename(latest_file, new_filename)
+                    print(f"Archivo renombrado a: {new_filename}")
+                else:
+                    print("No se encontró ningún archivo CSV descargado.")
+                
+                time.sleep(5)
 
                 # Volvemos al frame principal después de cada descarga
                 driver.switch_to.default_content()
