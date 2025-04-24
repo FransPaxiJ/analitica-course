@@ -14,11 +14,32 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.support.ui import Select
 import time
 
+# Crear directorio para descargas si no existe
+# download_dir = os.path.join(os.getcwd(), "./hidrometeorologico")
+# if not os.path.exists(download_dir):
+    # os.makedirs(download_dir)
+
 opts = Options()
 opts.add_argument("start-maximized")
 opts.add_argument("disable-infobars")
 opts.add_argument("--disable-extensions")
 opts.add_argument("--disable-blink-features=AutomationControlled")
+# opts.add_argument("--headless=new")
+# opts.add_argument("--disable-gpu")
+
+chrome_prefs = {
+    # No mostrar diálogo de descarga
+    "download.prompt_for_download": False,
+    # Carpeta por defecto para descargar
+    # "download.default_directory": download_dir,
+    # Permitir múltiples descargas sin preguntar
+    "profile.default_content_settings.popups": 0,
+    "profile.default_content_setting_values.automatic_downloads": 1,
+    # (opcional) deshabilitar notificaciones del sitio
+    "profile.default_content_setting_values.notifications": 2
+}
+
+opts.add_experimental_option("prefs", chrome_prefs)
 
 driver_path = "./chromedriver.exe"  # Cambia esto a la ruta de tu chromedriver
 
@@ -119,6 +140,7 @@ try:
         driver.execute_script("arguments[0].click();", submit_button)
         time.sleep(5)  # Espera un poco para que el clic se registre
         print("Botón de enviar clickeado correctamente")
+        time.sleep(5)
 
         # Localizamos el elemento select
         select_element = WebDriverWait(driver, 10).until(
@@ -135,7 +157,7 @@ try:
 
         # Iteramos por cada opción del select
         for index in range(len(options)):
-            try:
+            try: 
 
                 print(f"\nSeleccionando opción {index}: {options[index].text}")
                 
@@ -149,39 +171,58 @@ try:
                 select.select_by_index(index)
                 time.sleep(5)  # Esperamos a que la página se actualice
                 print(f"Opción {index} seleccionada correctamente")
-                
-                # Volvemos a buscar el iframe porque podría haber cambiado
+
+                # cambiamos de iframe donde esta el CSV
+                time.sleep(3) 
                 new_iframe3 = WebDriverWait(driver, 15).until(
                     EC.presence_of_element_located((By.XPATH, "//iframe[contains(@id, 'contenedor')]"))
                 )
                 
-                # Cambiamos al contexto del iframe
+                # Cambiar al contexto del nuevo iframe
                 driver.switch_to.frame(new_iframe3)
-                print("Cambiado al contexto del iframe de contenido")
-                time.sleep(3)
-                
+                print("Cambiado al contexto del nuevo iframe")
+
                 # Hacemos click en el botón de Exportar a CSV
                 export_button = WebDriverWait(driver, 15).until(
                     EC.element_to_be_clickable((By.XPATH, "//button[contains(@id, 'export2')]"))
                 )
                 driver.execute_script("arguments[0].click();", export_button)
                 time.sleep(5)  # Esperamos a que se complete la descarga
-                print(f"Datos exportados para la opción {index}: {options[index].text}")
+                print(f"Click en el boton de Exportar CSV realizado con exito")
+
+                # Volvemos al frame principal después de cada descarga
+                driver.switch_to.default_content()
                 
-                # volvemos al contexto anterior del iframe
-                driver.switch_to.parent_frame
+                # Volvemos al primer iframe (iframe del mapa)
+                iframe = WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, "//iframe[contains(@src, 'mapa-estaciones-2')]"))
+                )
+                driver.switch_to.frame(iframe)
+                
+                # Volvemos al segundo iframe
+                new_iframe2 = WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.XPATH, "//iframe[contains(@class, 'iframeLoad')]"))
+                )
+                driver.switch_to.frame(new_iframe2)
+                print("Volvimos al iframe principal para continuar con la siguiente opción")
 
             except Exception as e:
-                print(f"Error al procesar la opción {index}: {e}")
-                # Intentamos volver al iframe principal para continuar con la siguiente opción
+                print(f"Error al seleccionar la opción {index}: {e}")
+                # Intentamos volver al contexto correcto en caso de error
                 try:
                     driver.switch_to.default_content()
+                    iframe = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.XPATH, "//iframe[contains(@src, 'mapa-estaciones-2')]"))
+                    )
+                    driver.switch_to.frame(iframe)
                     new_iframe2 = WebDriverWait(driver, 15).until(
                         EC.presence_of_element_located((By.XPATH, "//iframe[contains(@class, 'iframeLoad')]"))
                     )
                     driver.switch_to.frame(new_iframe2)
-                except:
-                    print("No se pudo recuperar el contexto del iframe principal")      
+                    print("Recuperado el contexto después de un error")
+                except Exception as iframe_error:
+                    print(f"No se pudo recuperar el contexto: {iframe_error}")
+                continue      
         
     except Exception as e:
         print(f"Error al interactuar con el nuevo iframe 2: {e}")
