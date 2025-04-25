@@ -1,1 +1,3 @@
-# hacer click en los archivos .ipynb para ver el contenido
+# Recuerda instalar la dependencia de Selenium en python para probar el web scraping
+
+## pip install selenium

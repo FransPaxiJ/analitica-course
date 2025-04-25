@@ -82,7 +82,7 @@ try:
     search_input.clear()
 
     # Ingresar al departamento deseado para buscar
-    search_input.send_keys("Loreto")
+    search_input.send_keys("Lima")
 
     time.sleep(5)  # Espera un poco para que el texto se ingrese
     print("Texto ingresado en el campo de búsqueda")
