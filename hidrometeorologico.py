@@ -80,7 +80,10 @@ try:
         EC.presence_of_element_located((By.XPATH, "//input[contains(@class, 'search-input')]"))
     )
     search_input.clear()
-    search_input.send_keys("Lima")
+
+    # Ingresar al departamento deseado para buscar
+    search_input.send_keys("Loreto")
+
     time.sleep(5)  # Espera un poco para que el texto se ingrese
     print("Texto ingresado en el campo de búsqueda")
 
@@ -256,3 +259,4 @@ except Exception as e:
     print(f"Error al interactuar con el iframe 1: {e}")
     exit(1)
 
+0
