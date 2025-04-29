@@ -258,5 +258,3 @@ try:
 except Exception as e:
     print(f"Error al interactuar con el iframe 1: {e}")
     exit(1)
-
-0
